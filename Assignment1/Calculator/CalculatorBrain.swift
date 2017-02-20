@@ -64,8 +64,8 @@ class CalculatorBrain {
                         last  = symbol
                     }
                 }
-            print(operandsOperationsStack)
-            print(desc)
+            //print(operandsOperationsStack)
+            //print(desc)
             }
             // Check to see if desc is empty which means the user has just entered a digit (Constant)
             return desc == "" ? last ?? "" : desc
