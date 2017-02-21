@@ -19,17 +19,16 @@ class ViewController: UIViewController {
     @IBAction private func touchDigit(_ sender: UIButton) {
         let  digit = sender.currentTitle!
         
-        
+        // Prevent user from entering 0000 by never allowing any 0 if this is the first digit
+        // and not setting userIsInTheMiddleOfTyping bool
+        if (display.text == "0" && digit == "0") { return }
+
         if userIsInTheMiddleOfTyping {
             let textCurrentlyInDisplay = display!.text!
             if ( digit != "." || textCurrentlyInDisplay.range(of:".") == nil ) {
                 display.text = textCurrentlyInDisplay + digit
             }
         } else {
-            // Prevent user from entering 0000 by never allowing any 0 if this is the first digit
-            // and not setting userIsInTheMiddleOfTyping bool
-            if digit == "0" { return }
-            
             display.text = digit
             
             if digit == "." {
@@ -84,7 +83,7 @@ class ViewController: UIViewController {
         
         // brain.description could be empty if user just press "="
         if !(brain.description.isEmpty) {
-            historyValue = brain.isPartialResult ? brain.description + "..." : brain.description + "="
+            historyValue = brain.isPartialResult ? brain.description + "..." : brain.description + " ="
         }
     }
 }
