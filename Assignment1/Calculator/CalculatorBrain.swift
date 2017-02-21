@@ -13,14 +13,30 @@ class CalculatorBrain {
     
     private var accumulator = 0.0
     
+    private var descriptionAccumulator = "" {
+        didSet {
+            if pending == nil {
+                currrentPrecedence = Precedence.Max
+            }
+        }
+    }
+    
     var isPartialResult = false
     
-    private var operandsOperationsStack = [AnyObject]()
+    //private var internalProgram = [AnyObject]()
+    
+    // Track what is the current operation precedence * / higher then + -
+    private enum Precedence: Int {
+        case Min = 0
+        case Max = 1
+    }
+    
+    private var currrentPrecedence = Precedence.Max
     
     func setOperand(operand: Double) {
         if pending == nil { clear () }
         accumulator =  operand
-        operandsOperationsStack.append(operand as AnyObject)
+        descriptionAccumulator = formatNumber(op:operand)
     }
     
     func formatNumber(op: Double) -> String {
@@ -32,96 +48,71 @@ class CalculatorBrain {
     }
     
     var description: String {
-        get{
-            var desc = ""
-            var last: String?
-            
-            for item in operandsOperationsStack {
-                //print("Last: \(last)!")
-                if let operand = item as? Double {
-                    last = formatNumber(op:operand)
-                }
-                else if let symbol = item as? String {
-                    if let operation = operations[symbol] {
-                        // This code uses Nil-Coalescing Operator
-                        switch operation {
-                        case .Constant(_):
-                            last = symbol
-                        case .NonOperandOperation(_):
-                            last = symbol // ToDo not sure if this is correct
-                        case .UnaryOperation( _):
-                            // Check if last is nil then print desc then symbol then check if last is nil and print desc
-                            desc = (last != nil ? desc : "") + symbol + "(" + (last ?? desc) + ")"
-                            last = nil
-                        case .BinaryOperation( _):
-                            // Check to see if last is nil (a digit??) if so print empty string and symbol
-                            desc += (last ?? "") + symbol
-                        case .Equals:
-                            desc += last ?? ""
-                            last = nil
-                        }
-                    } else {
-                        last  = symbol
-                    }
-                }
-            //print(operandsOperationsStack)
-            //print(desc)
+        get {
+            if pending == nil {
+                return descriptionAccumulator
+            } else {
+                return pending!.descriptionFunction(pending!.firstDescriptionOperand, pending!.firstDescriptionOperand != descriptionAccumulator ? descriptionAccumulator : "")
             }
-            // Check to see if desc is empty which means the user has just entered a digit (Constant)
-            return desc == "" ? last ?? "" : desc
         }
     }
+    
     
     func clear () {
         pending = nil
         accumulator = 0.0
         isPartialResult = false
-        operandsOperationsStack.removeAll()
+        descriptionAccumulator = ""
     }
     
+    // first closure is the operation second is the pretty string for description
     private var operations: Dictionary<String,Operation> = [
         "π" : Operation.Constant(M_PI),
         "e" : Operation.Constant(M_E),
-        "rand" : Operation.NonOperandOperation(drand48),
-        "±" : Operation.UnaryOperation({ -$0 }),
-        "√" : Operation.UnaryOperation(sqrt),
-        "cos" : Operation.UnaryOperation(cos),
-        "sin" : Operation.UnaryOperation(sin),
-        "tan" : Operation.UnaryOperation(tan),
-        "x²" : Operation.UnaryOperation({pow($0,2)}),
-        "×" : Operation.BinaryOperation({ $0 * $1 }),
-        "÷" : Operation.BinaryOperation({ $0 / $1 }),
-        "-" : Operation.BinaryOperation({ $0 - $1 }),
-        "+" : Operation.BinaryOperation({ $0 + $1 }),
+        "rand" : Operation.NonOperandOperation(drand48, {"rand (\($0))"}),
+        "±" : Operation.UnaryOperation({ -$0 }, {"-(\($0))"}),
+        "√" : Operation.UnaryOperation(sqrt, {"√(\($0))"}),
+        "cos" : Operation.UnaryOperation(cos, {"cos(\($0))"}),
+        "sin" : Operation.UnaryOperation(sin, {"sin(\($0))"}),
+        "tan" : Operation.UnaryOperation(tan, {"tan(\($0))"}),
+        "x²" : Operation.UnaryOperation({pow($0,2)}, {"(\($0))²"}),
+        "×" : Operation.BinaryOperation({ $0 * $1 }, { "\($0) × \($1)" }, Precedence.Max),
+        "÷" : Operation.BinaryOperation({ $0 / $1 }, { "\($0) ÷ \($1)" }, Precedence.Max),
+        "-" : Operation.BinaryOperation({ $0 - $1 }, { "\($0) - \($1)" }, Precedence.Min),
+        "+" : Operation.BinaryOperation({ $0 + $1 }, { "\($0) + \($1)" }, Precedence.Min),
         "=" : Operation.Equals,
         ]
     
     private enum Operation {
         case Constant(Double)
-        case NonOperandOperation((Void) -> Double)
-        case UnaryOperation((Double) -> Double)
-        case BinaryOperation((Double, Double) -> Double)
+        case NonOperandOperation(() -> Double, (String) ->String)
+        case UnaryOperation((Double) -> Double, (String) -> String)
+        case BinaryOperation((Double, Double) -> Double, (String,String) -> String, Precedence)
         case Equals
     }
     
     
     func performOperation(symbol: String) {
         if let operation = operations[symbol] {
-            operandsOperationsStack.append(symbol as AnyObject)
             switch operation {
             case .Constant(let value):
+                descriptionAccumulator = symbol
                 accumulator = value
-            case .NonOperandOperation(let function):
+            case .NonOperandOperation(let function, let descriptionFunction):
                 accumulator = function()
-                // Remove the function symbol and append te value generated by the function i.e. we do not want rand we want
-                // the random number in the stack
-                operandsOperationsStack.removeLast()
-                operandsOperationsStack.append(accumulator as AnyObject)
-            case .UnaryOperation(let function):
+                descriptionAccumulator = descriptionFunction(String(formatNumber(op: accumulator)))
+            case .UnaryOperation(let function, let descriptionFunction):
                 accumulator = function(accumulator)
-            case .BinaryOperation(let function):
+                descriptionAccumulator = descriptionFunction(descriptionAccumulator)
+            case .BinaryOperation(let function, let descriptionFunction, let precedence):
                 executePendingBinaryOperation()
-                pending = PendingBinaryOperationInfo(binaryFunction: function, firstOperand: accumulator)
+                if currrentPrecedence.rawValue < precedence.rawValue {
+                    // wrap it in parans to show precenence
+                    descriptionAccumulator = "(\(descriptionAccumulator))"
+                }
+                currrentPrecedence = precedence
+                pending = PendingBinaryOperationInfo(binaryFunction: function, firstOperand: accumulator,
+                                                     descriptionFunction: descriptionFunction, firstDescriptionOperand: descriptionAccumulator )
             case .Equals:
                 executePendingBinaryOperation()
             }
@@ -132,6 +123,7 @@ class CalculatorBrain {
     private func executePendingBinaryOperation() {
         if pending != nil {
             accumulator = pending!.binaryFunction(pending!.firstOperand, accumulator)
+            descriptionAccumulator = pending!.descriptionFunction(pending!.firstDescriptionOperand, descriptionAccumulator)
             pending = nil
             isPartialResult = false
         } else {
@@ -144,6 +136,8 @@ class CalculatorBrain {
     private struct PendingBinaryOperationInfo {
         var binaryFunction: (Double, Double) -> Double
         var firstOperand: Double
+        var descriptionFunction: (String, String) -> String
+        var firstDescriptionOperand: String
     }
     
     var result: Double {
