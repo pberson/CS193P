@@ -12,7 +12,7 @@ import Foundation
 class CalculatorBrain {
     
     private var accumulator = 0.0
-    
+    private var internalProgram = [AnyObject]()
     private var descriptionAccumulator = "" {
         didSet {
             if pending == nil {
@@ -20,11 +20,7 @@ class CalculatorBrain {
             }
         }
     }
-    
-    var isPartialResult = false
-    
-    //private var internalProgram = [AnyObject]()
-    
+
     // Track what is the current operation precedence * / higher then + -
     private enum Precedence: Int {
         case Min = 0
@@ -33,10 +29,29 @@ class CalculatorBrain {
     
     private var currrentPrecedence = Precedence.Max
     
+    var variablesValues = [String: Double]() {
+        didSet {
+            // run program whenever a variable is set
+            program = internalProgram as CalculatorBrain.PropertyList
+        }
+    }
+
+    var isPartialResult = false
+    
     func setOperand(operand: Double) {
+        // if we press an operand with no pending operator reset
         if pending == nil { clear () }
         accumulator =  operand
+        internalProgram.append(operand as AnyObject)
         descriptionAccumulator = formatNumber(numAsDouble:operand)
+    }
+    
+    func setOperand(variableName: String) {
+        variablesValues[variableName] = variablesValues[variableName] ?? 0.0
+        // Set the all accumulator's to either value or variable name
+        accumulator = variablesValues[variableName]!
+        internalProgram.append(variableName as AnyObject)
+        descriptionAccumulator = variableName
     }
     
     func formatNumber(numAsDouble: Double) -> String {
@@ -63,6 +78,7 @@ class CalculatorBrain {
         accumulator = 0.0
         isPartialResult = false
         descriptionAccumulator = ""
+        internalProgram.removeAll()
     }
     
     // first closure is the operation second is the pretty string for description
@@ -93,6 +109,7 @@ class CalculatorBrain {
     
     
     func performOperation(symbol: String) {
+        internalProgram.append(symbol as AnyObject)
         if let operation = operations[symbol] {
             switch operation {
             case .Constant(let value):
@@ -116,7 +133,6 @@ class CalculatorBrain {
             case .Equals:
                 executePendingBinaryOperation()
             }
-            //print(operandsOperationsStack)
         }
     }
     
@@ -138,6 +154,32 @@ class CalculatorBrain {
         var firstOperand: Double
         var descriptionFunction: (String, String) -> String
         var firstDescriptionOperand: String
+    }
+    
+    typealias PropertyList = AnyObject
+    
+    var program: PropertyList {
+        get {
+            return internalProgram as CalculatorBrain.PropertyList
+        }
+        set {
+            clear()
+            if let arrayOfOps = newValue as? [AnyObject] {
+                for op in arrayOfOps {
+                    if let operand = op as? Double {
+                        setOperand(operand: operand)
+                    } else if let operation = op as? String {
+                        // All we know is it's a string so it maybe a operation or variable need
+                        // More checking
+                        if operations.index(forKey: operation) != nil{
+                            performOperation(symbol: operation)
+                        } else {
+                            setOperand(variableName: operation)
+                        }
+                    }
+                }
+            }
+        }
     }
     
     var result: Double {

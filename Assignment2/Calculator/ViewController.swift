@@ -16,6 +16,15 @@ class ViewController: UIViewController {
     
     private var userIsInTheMiddleOfTyping = false
     
+    private func updateUI() {
+        displayValue = brain.result
+        
+        // brain.description could be empty if user just press "="
+        if !(brain.description.isEmpty) {
+            historyValue = brain.isPartialResult ? brain.description + "..." : brain.description + " ="
+        }
+    }
+    
     @IBAction private func touchDigit(_ sender: UIButton) {
         let  digit = sender.currentTitle!
         
@@ -64,7 +73,24 @@ class ViewController: UIViewController {
 
     private var brain = CalculatorBrain()
     
+
+    @IBAction func performAddVariable(_ sender: UIButton) {
+        brain.setOperand(variableName: "M")
+        updateUI()
+    }
+    
+    
+    @IBAction func performSetVariable() {
+        brain.variablesValues["M"] = displayValue
+        updateUI()
+        userIsInTheMiddleOfTyping = false
+    }
+
+    
     @IBAction func performClear() {
+        if brain.variablesValues.index(forKey: "M") != nil {
+            brain.variablesValues.removeValue(forKey: "M")
+        }
         brain.clear()
         displayValue = 0
         historyValue = " " // Set a space to mantian it from shrinking 
@@ -79,12 +105,7 @@ class ViewController: UIViewController {
         if let mathematicalSymbol = sender.currentTitle {
             brain.performOperation(symbol: mathematicalSymbol)
         }
-        displayValue = brain.result
-        
-        // brain.description could be empty if user just press "="
-        if !(brain.description.isEmpty) {
-            historyValue = brain.isPartialResult ? brain.description + "..." : brain.description + " ="
-        }
+        updateUI()
     }
 }
 
