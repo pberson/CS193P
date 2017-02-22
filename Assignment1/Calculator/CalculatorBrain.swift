@@ -36,24 +36,24 @@ class CalculatorBrain {
     func setOperand(operand: Double) {
         if pending == nil { clear () }
         accumulator =  operand
-        descriptionAccumulator = formatNumber(op:operand)
+        descriptionAccumulator = formatNumber(numAsDouble:operand)
     }
     
-    func formatNumber(op: Double) -> String {
-        let num = NumberFormatter()
+    func formatNumber(numAsDouble: Double) -> String {
+        let num =  NumberFormatter()
+        num.numberStyle = NumberFormatter.Style.decimal
         num.minimumFractionDigits = 0
         num.maximumFractionDigits = 6
         num.minimumIntegerDigits = 1
-        return num.string(from: NSNumber(value:op))!
+        num.usesGroupingSeparator = true
+        return num.string(from: NSNumber(value:numAsDouble))!
     }
     
     var description: String {
-        get {
-            if pending == nil {
-                return descriptionAccumulator
-            } else {
-                return pending!.descriptionFunction(pending!.firstDescriptionOperand, pending!.firstDescriptionOperand != descriptionAccumulator ? descriptionAccumulator : "")
-            }
+        if pending == nil {
+            return descriptionAccumulator
+        } else {
+            return pending!.descriptionFunction(pending!.firstDescriptionOperand, pending!.firstDescriptionOperand != descriptionAccumulator ? descriptionAccumulator : "")
         }
     }
     
@@ -100,7 +100,7 @@ class CalculatorBrain {
                 accumulator = value
             case .NonOperandOperation(let function, let descriptionFunction):
                 accumulator = function()
-                descriptionAccumulator = descriptionFunction(String(formatNumber(op: accumulator)))
+                descriptionAccumulator = descriptionFunction(String(formatNumber(numAsDouble: accumulator)))
             case .UnaryOperation(let function, let descriptionFunction):
                 accumulator = function(accumulator)
                 descriptionAccumulator = descriptionFunction(descriptionAccumulator)

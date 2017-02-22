@@ -45,7 +45,7 @@ class ViewController: UIViewController {
         }
         set {
             if let num = Double(String(newValue)) {
-                return display.text = brain.formatNumber(op: num)
+                return display.text = brain.formatNumber(numAsDouble: num)
             } else {
                 // We should never get here
                 return display.text = String(newValue)
