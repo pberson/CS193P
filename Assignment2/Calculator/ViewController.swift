@@ -126,6 +126,28 @@ class ViewController: UIViewController {
         if let mathematicalSymbol = sender.currentTitle {
             brain.performOperation(symbol: mathematicalSymbol)
         }
+        
+        if brain.operationError != nil {
+            print("ErrorValue: \(brain.operationError)")
+            let alert = UIAlertController(title: "Error", message: (brain.operationError! + " Yes to Undo "), preferredStyle: .actionSheet)
+            alert.addAction(UIAlertAction(title: "Yes",
+                                          style: .default,
+                                          handler: { (alert: UIAlertAction!) in self.handlerMathAlertYes() } ) )
+            alert.addAction(UIAlertAction(title: "No",
+                                          style: .cancel,
+                                          handler: { (alert: UIAlertAction!) in self.brain.operationError = nil } ) )
+            present(alert, animated: true, completion: nil)
+        }
+        print("Update View")
+        updateUI()
+    }
+    
+    private func handlerMathAlertYes (){
+        // This will undo only the last step if it was binary opertion then it would remove the equals 
+        // not equals and operand TODO would be to implement it better in Calculator Brain
+        brain.undo()
+        //brain.undo() // remove ( for binary this would clean it up better
+        brain.operationError = nil
         updateUI()
     }
 }
