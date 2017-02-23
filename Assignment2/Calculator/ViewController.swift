@@ -22,6 +22,8 @@ class ViewController: UIViewController {
         // brain.description could be empty if user just press "="
         if !(brain.description.isEmpty) {
             historyValue = brain.isPartialResult ? brain.description + "..." : brain.description + " ="
+        } else {
+            historyValue = " "
         }
     }
     
@@ -30,7 +32,10 @@ class ViewController: UIViewController {
         
         // Prevent user from entering 0000 by never allowing any 0 if this is the first digit
         // and not setting userIsInTheMiddleOfTyping bool
-        if (display.text == "0" && digit == "0") { return }
+        if (display.text == "0" && digit == "0") {
+            userIsInTheMiddleOfTyping = true
+            return
+        }
 
         if userIsInTheMiddleOfTyping {
             let textCurrentlyInDisplay = display!.text!
@@ -48,26 +53,25 @@ class ViewController: UIViewController {
         userIsInTheMiddleOfTyping = true
     }
 
-    private var displayValue: Double {
+    private var displayValue: Double? {
         get {
             return Double(display.text!)!
         }
         set {
-            if let num = Double(String(newValue)) {
-                return display.text = brain.formatNumber(numAsDouble: num)
-            } else {
-                // We should never get here
-                return display.text = String(newValue)
-            }
+            /*
+            if let num = Double(String(newValue!)) {
+                display.text = brain.formatNumber(numAsDouble: num)
+            } */
+            display.text = newValue != nil ? brain.formatNumber(numAsDouble: Double(newValue!)) : "0"
         }
     }
     
-    private var historyValue: String {
+    private var historyValue: String? {
         get {
             return history.text!
         }
         set {
-            return history.text = String(newValue)
+             history.text = newValue != nil ? newValue! : " "
         }
     }
 
@@ -85,21 +89,38 @@ class ViewController: UIViewController {
         updateUI()
         userIsInTheMiddleOfTyping = false
     }
-
+    
+    @IBAction func performUndo() {
+        
+        if userIsInTheMiddleOfTyping{
+            let currentText = display.text!.characters
+            if currentText.count != 1 {
+                display.text! = String(currentText.dropLast())
+            } else {
+                // all numbers have now been deleted reset the display to initial state
+                display.text! = "0"
+                userIsInTheMiddleOfTyping = false
+            }
+        } else {
+            brain.undo()
+            updateUI()
+        }
+        
+    }
     
     @IBAction func performClear() {
         if brain.variablesValues.index(forKey: "M") != nil {
             brain.variablesValues.removeValue(forKey: "M")
         }
         brain.clear()
-        displayValue = 0
-        historyValue = " " // Set a space to mantian it from shrinking 
+        displayValue = nil
+        historyValue = nil // Set a space to mantian it from shrinking
         userIsInTheMiddleOfTyping = false
     }
     
     @IBAction private func performOperation(_ sender: UIButton) {
         if userIsInTheMiddleOfTyping {
-            brain.setOperand(operand: displayValue)
+            brain.setOperand(operand: displayValue!)
             userIsInTheMiddleOfTyping = false
         }
         if let mathematicalSymbol = sender.currentTitle {

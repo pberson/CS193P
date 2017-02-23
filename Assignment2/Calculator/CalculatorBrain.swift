@@ -81,6 +81,15 @@ class CalculatorBrain {
         internalProgram.removeAll()
     }
     
+    func undo () {
+        if !internalProgram.isEmpty {
+            internalProgram.removeLast()
+            program = internalProgram as CalculatorBrain.PropertyList
+        }  else {
+            clear()
+        }
+    }
+    
     // first closure is the operation second is the pretty string for description
     private var operations: Dictionary<String,Operation> = [
         "π" : Operation.Constant(M_PI),
