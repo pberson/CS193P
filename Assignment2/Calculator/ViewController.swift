@@ -128,7 +128,7 @@ class ViewController: UIViewController {
         }
         
         if brain.operationError != nil {
-            print("ErrorValue: \(brain.operationError)")
+            //print("ErrorValue: \(brain.operationError)")
             let alert = UIAlertController(title: "Error", message: (brain.operationError! + " Yes to Undo "), preferredStyle: .actionSheet)
             alert.addAction(UIAlertAction(title: "Yes",
                                           style: .default,
@@ -138,7 +138,6 @@ class ViewController: UIViewController {
                                           handler: { (alert: UIAlertAction!) in self.brain.operationError = nil } ) )
             present(alert, animated: true, completion: nil)
         }
-        print("Update View")
         updateUI()
     }
     
