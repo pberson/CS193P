@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VariablesViewState
+   version = "1.0">
+   <ContextStates>
+      <ContextState
+         contextName = "CalculatorBrain.setOperand(variableName : String) -&gt; ():CalculatorBrain.swift">
+      </ContextState>
+      <ContextState
+         contextName = "CalculatorBrain.executePendingBinaryOperation() -&gt; ():CalculatorBrain.swift">
+      </ContextState>
+      <ContextState
+         contextName = "ViewController.performSetVariable() -&gt; ():ViewController.swift">
+      </ContextState>
+   </ContextStates>
+</VariablesViewState>
