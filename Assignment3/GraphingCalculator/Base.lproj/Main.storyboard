@@ -380,6 +380,10 @@
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="gwG-4F-sQk" customClass="GraphView" customModule="GraphingCalculator" customModuleProvider="target">
                                 <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <gestureRecognizers/>
+                                <connections>
+                                    <outletCollection property="gestureRecognizers" destination="awy-80-E3f" appends="YES" id="Fax-aj-lVP"/>
+                                </connections>
                             </view>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
@@ -390,8 +394,16 @@
                             <constraint firstItem="gwG-4F-sQk" firstAttribute="bottom" secondItem="hf6-iH-leW" secondAttribute="top" id="vCz-Lt-jvy"/>
                         </constraints>
                     </view>
+                    <connections>
+                        <outlet property="graphView" destination="gwG-4F-sQk" id="x2Z-Dh-swK"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Hlh-h0-ZET" userLabel="First Responder" sceneMemberID="firstResponder"/>
+                <tapGestureRecognizer numberOfTapsRequired="2" id="awy-80-E3f">
+                    <connections>
+                        <action selector="tapChangeOrigin:" destination="EtO-0g-lcg" id="KDt-Kk-BYY"/>
+                    </connections>
+                </tapGestureRecognizer>
             </objects>
             <point key="canvasLocation" x="124" y="538"/>
         </scene>
