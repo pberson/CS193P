@@ -8,6 +8,10 @@
 
 import UIKit
 
+protocol GraphViewDataSource {
+    func getYcoordinate(x: CGFloat ) -> CGFloat?
+}
+
 @IBDesignable
 class GraphView: UIView {
     
@@ -16,25 +20,62 @@ class GraphView: UIView {
     var color: UIColor = UIColor.black { didSet { setNeedsDisplay() } }
     
     @IBInspectable
-    var scale: CGFloat = 1 { didSet { setNeedsDisplay() } }
+    var scale: CGFloat = 10 { didSet { setNeedsDisplay() } } // This sets points per unit meanin do if 10 then .10 .20 ... 1
     
     @IBInspectable
     var graphOrigin: CGPoint! { didSet { setNeedsDisplay() } }
-
-    var axes = AxesDrawer()
     
-    // Only override draw() if you perform custom drawing.
-    // An empty implementation adversely affects performance during animation.
+    private var axes = AxesDrawer()
+    
+    var datasource: GraphViewDataSource?
+
+    
     override func draw(_ rect: CGRect) {
         
-        //let height = bounds.size.height
-        //let width = bounds.size.width
-       //let screenScale =  self.contentScaleFactor
-        
+        //let screenScale =  self.contentScaleFactor
+    
         // Check to see if graphOrigin is set if not determine center of bounds
         graphOrigin = graphOrigin ?? CGPoint(x: bounds.midX, y: bounds.midY)
+        axes.drawAxes(inRect: bounds, origin: graphOrigin, pointsPerUnit: scale)
+        pathForFunction()?.stroke()
+    }
+    
+    func pathForFunction () -> UIBezierPath? {
         
-        axes.drawAxes(inRect: self.bounds, origin: graphOrigin, pointsPerUnit: scale)
+        let linePath = UIBezierPath()
+        let width = Int(bounds.size.width * scale) // of CGRect of x axis within bounds scaled
+        var point = CGPoint()
+        var pathStarted = false
+        
+        if let data = datasource {
+            for pixel in 0...width {
+                point.x  = CGFloat(pixel) / scale
+                
+                // Not wthat we have an x calue get the y value by calling the protocol
+                // function which will call the "Cal Brain" sorta from the CalculatorViewController
+                // Using Protocol and Closure function
+                
+                if let y = data.getYcoordinate(x: (point.x - graphOrigin.x) / scale) {
+                    if y.isNormal || y.isZero {
+                        // Adjust for the cooridate system remmebmer 0,0 is the upper left
+                        point.y = graphOrigin.y - y * scale
+                        // print("Y Value \(y)")
+                        // Path has not been strated so use move to
+                        if !pathStarted {
+                            linePath.move(to:point)
+                            pathStarted = true
+                            // Path is started so just add a point
+                        } else {
+                            linePath.addLine(to:point)
+                        }
+                    }
+                    
+                }
+                
+            }
+            return linePath
+        } else {return nil}
+        
     }
     
     
@@ -49,7 +90,7 @@ class GraphView: UIView {
         }
     }
     
-     func moveGraph(_ recongnizer: UIPanGestureRecognizer) {
+    func moveGraph(_ recongnizer: UIPanGestureRecognizer) {
         switch recongnizer.state {
         case .changed, .ended :
             let translation = recongnizer.translation(in: self)
@@ -59,9 +100,16 @@ class GraphView: UIView {
             break
         }
     }
-
+    
+    func tapChangeOrigin(_ recongnizer: UITapGestureRecognizer) {
+        if recongnizer.state == .ended {
+            graphOrigin = recongnizer.location(in: recongnizer.view)
+        }
+    }
+    
+    
     /******************* Gesture Handlers End ***********************/
-
+    
     
 
 }

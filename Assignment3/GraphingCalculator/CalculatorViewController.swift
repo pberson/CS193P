@@ -14,7 +14,14 @@ class CalculatorViewController: UIViewController {
     
     @IBOutlet private weak var history: UILabel!
     
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        print("CalVC Loaded")
+    }
+    
     private var userIsInTheMiddleOfTyping = false
+    
+    private var variableIsSet = false
     
     private func updateUI() {
         displayValue = brain.result
@@ -80,12 +87,14 @@ class CalculatorViewController: UIViewController {
 
     @IBAction func performAddVariable(_ sender: UIButton) {
         brain.setOperand(variableName: "M")
+        variableIsSet = true
         updateUI()
     }
     
     
     @IBAction func performSetVariable() {
         brain.variablesValues["M"] = displayValue
+        variableIsSet = true
         updateUI()
         userIsInTheMiddleOfTyping = false
     }
@@ -112,6 +121,7 @@ class CalculatorViewController: UIViewController {
     @IBAction func performClear() {
         if brain.variablesValues.index(forKey: "M") != nil {
             brain.variablesValues.removeValue(forKey: "M")
+            variableIsSet = false
         }
         brain.clear()
         displayValue = nil
@@ -141,6 +151,33 @@ class CalculatorViewController: UIViewController {
         }
         updateUI()
     }
+    
+    
+     
+    // In a storyboard-based application, you will often want to do a little preparation before navigation
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        // Get the new view controller using segue.destinationViewController.
+        // Pass the selected object to the new view controller.
+        var destinationvc = segue.destination
+        if let navcon = destinationvc as? UINavigationController {
+            destinationvc = navcon.visibleViewController ?? destinationvc
+        }
+        if let graphvc = destinationvc as? GraphViewController {
+            if segue.identifier == "showGraph" {
+                if !brain.isPartialResult && variableIsSet {
+                    // *************************
+                    // Closure Function to compute all values for the graphViewController
+                    graphvc.function = { (x: CGFloat ) -> Double in
+                        self.brain.variablesValues["M"] = Double(x)
+                        return self.brain.result
+                        
+                    }
+                    // ********* Magic all happens above  *****
+                }
+            }
+        }
+    }
+    
     
     private func handlerMathAlertYes (){
         // This will undo only the last step if it was binary opertion then it would remove the equals 
